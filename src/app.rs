@@ -6,6 +6,8 @@ use leptos::view;      // view! マクロ
 use leptos_meta::{provide_meta_context, Stylesheet, Title, MetaTags};
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::StaticSegment;
+use rand::seq::SliceRandom; // シャッフルに必要
+use rand::thread_rng;
 
 // 「HTML全体の骨組み（外枠）を定義する特別な関数」
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -57,11 +59,16 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     // 1. カードのデータを用意
-    let cards = vec!["A", "A", "B", "B", "C", "C", "D", "D"];
+    let mut cards = vec!["A", "A", "B", "B", "C", "C", "D", "D"];
+
+    // 2. 乱数生成器を使ってシャッフル
+    // thread_rng(): 現在のスレッドで使用する乱数生成器を取得します。
+    let mut rng = thread_rng();
+    cards.shuffle(&mut rng);
 
     view! {
         <h1>"Card Click Demo"</h1>
-        // 2. グリッドレイアウトでカードを配置
+        // 3. グリッドレイアウトでカードを配置
         <div style="
             display: grid; 
             grid-template-columns: repeat(4, 100px); 
@@ -100,7 +107,16 @@ fn Card(content: &'static str) -> impl IntoView {
             // 関数（クロージャ）にして渡すことで、Leptosが「後で値が変わった時に、この関数をもう一度実行して、新しい値を確認する」ことができるようになります。
             <div class="card-inner" class:is-flipped=move || is_flipped.get()>
                 <div class="card-face card-front">"?"</div>
-                <div class="card-face card-back">{content}</div>
+                <div class="card-face card-back">
+                    // 左上のマーク
+                    <div class="corner top-left">"♠"</div>
+                    
+                    // 中央のメインコンテンツ
+                    <div class="main-content">{content}</div>
+                    
+                    // 右下のマーク
+                    <div class="corner bottom-right">"♠"</div>
+                </div>
             </div>
         </div>
     }

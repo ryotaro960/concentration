@@ -18,6 +18,7 @@ body {
 				height: 100%;
 				transition: transform 0.6s ease-in-out;
 				transform-style: preserve-3d;  // 3D効果を維持
+				transform-origin: center center; // 中心を軸にするよう指定
 
 				/* クラス "is-flipped" がついた時に180度回転する */
 				&.is-flipped {
@@ -40,11 +41,14 @@ body {
 						font-size: 2rem;
 						border-radius: 8px;
 						border: 2px solid #333;
+						box-sizing: border-box; // 枠線がカードの外側に付加されてしまい、その分だけ計算がズレている修正
 	
 
 						/* 表面（最初に見えている方） */
 						&.card-front {
-								background-color: #f0f0f0;
+								background-color: #2c3e50;
+								background-image: radial-gradient(circle, #34495e 1px, transparent 1px);
+								background-size: 10px 10px;
 								z-index: 2; // 表面を上に
 						}
 
@@ -52,6 +56,33 @@ body {
 						&.card-back {
 								background-color: lightblue;
 								transform: rotateY(180deg); /* 最初から裏返しておく */
+						}
+
+						/* 隅のマークの共通スタイル */
+						.corner {
+								position: absolute;
+								font-size: 1rem; /* 中央より小さめに */
+								line-height: 1;
+								padding: 5px;
+						}
+
+						/* 左上 */
+						.top-left {
+								top: 0;
+								left: 0;
+						}
+
+						/* 右下 */
+						.bottom-right {
+								bottom: 0;
+								right: 0;
+								transform: rotate(180deg); /* 逆さまにするのがトランプ流 */
+						}
+
+						/* 中央の文字が隅のマークと被らないように調整 */
+						.main-content {
+								font-size: 2.5rem;
+								font-weight: bold;
 						}
 				}
 		}
