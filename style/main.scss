@@ -1,0 +1,58 @@
+body {
+	font-family: sans-serif;
+	text-align: center;
+}
+
+/* カード全体のコンテナ（3D空間の定義） */
+.card-container {
+    perspective: 1000px;
+    width: 100px;
+    height: 150px;
+    cursor: pointer;
+
+
+		/* 実際に回転する中身 */
+		.card-inner {
+				position: relative;
+				width: 100%;
+				height: 100%;
+				transition: transform 0.6s ease-in-out;
+				transform-style: preserve-3d;  // 3D効果を維持
+
+				/* クラス "is-flipped" がついた時に180度回転する */
+				&.is-flipped {
+						transform: rotateY(180deg);
+				}
+
+				/* カードの表面と裏面の共通設定 */
+				.card-face {
+						position: absolute;
+						top: 0;
+						left: 0;
+
+						inset: 0;           // 上下左右 0 に広げる
+						width: 100%;
+						height: 100%;
+						backface-visibility: hidden; /* 裏側を見えなくする重要設定 */
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						font-size: 2rem;
+						border-radius: 8px;
+						border: 2px solid #333;
+	
+
+						/* 表面（最初に見えている方） */
+						&.card-front {
+								background-color: #f0f0f0;
+								z-index: 2; // 表面を上に
+						}
+
+						/* 裏面（回転して出てくる方） */
+						&.card-back {
+								background-color: lightblue;
+								transform: rotateY(180deg); /* 最初から裏返しておく */
+						}
+				}
+		}
+}
