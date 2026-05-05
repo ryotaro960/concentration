@@ -36,10 +36,18 @@ async fn main() { // 「非同期（Asynchronous）処理をプログラムの�
 }
 
 #[cfg(not(feature = "ssr"))]
+
 fn main() {
+    // UIのルートとなるコンポーネント（App）をインポートしています。
+    // ポイント: Rustのライブラリ（lib.rs）側にメインのロジックやコンポーネントを配置し、それをバイナリ側から呼び出す構成になっています。これにより、Hydration（サーバーとクライアントの同期）がスムーズに行えます。
     // crate ではなく concentration (プロジェクト名) から呼び出す
     use concentration_lib::app::App;
 
+    // Rustコードがパニック（実行時エラー）を起こした際、ブラウザのデバッグコンソールに読みやすいエラーメッセージを表示させるための設定です。
+    // 重要性: これがないと、ブラウザ上では「Runtime Error」としか表示されず、原因の特定が非常に困難になります。
     console_error_panic_hook::set_once();
+
+    // Appコンポーネントを、HTMLの<body>タグ内にレンダリング（マウント）します。
+    // 動作: Leptosはこの時点で、DOMの制御権をRust（WebAssembly）側に引き渡します。
     mount_to_body(App);
 }
