@@ -5,11 +5,10 @@ body {
 
 /* カード全体のコンテナ（3D空間の定義） */
 .card-container {
-    perspective: 1000px;
-    width: 100px;
-    height: 150px;
+    perspective: 1000px; // 奥行（ユーザーと画面の距離感）
+    width: 90px;
+    height: 120px;
     cursor: pointer;
-
 
 		/* 実際に回転する中身 */
 		.card-inner {
@@ -44,7 +43,7 @@ body {
 						box-sizing: border-box; // 枠線がカードの外側に付加されてしまい、その分だけ計算がズレている修正
 	
 
-						/* 表面（最初に見えている方） */
+						/* 裏面（最初に見えている方） */
 						&.card-front {
 								background-color: #2c3e50;
 								background-image: radial-gradient(circle, #34495e 1px, transparent 1px);
@@ -52,7 +51,7 @@ body {
 								z-index: 2; // 表面を上に
 						}
 
-						/* 裏面（回転して出てくる方） */
+						/* 表面（回転して出てくる方） */
 						&.card-back {
 								background-color: lightblue;
 								transform: rotateY(180deg); /* 最初から裏返しておく */
@@ -76,7 +75,7 @@ body {
 						.bottom-right {
 								bottom: 0;
 								right: 0;
-								transform: rotate(180deg); /* 逆さまにするのがトランプ流 */
+								transform: rotate(180deg); /* マークを逆さまにする */
 						}
 
 						/* 中央の文字が隅のマークと被らないように調整 */

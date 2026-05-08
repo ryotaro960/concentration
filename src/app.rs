@@ -59,7 +59,8 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     // 1. カードのデータを用意
-    let mut cards = vec!["A", "A", "B", "B", "C", "C", "D", "D"];
+    // let mut cards = vec!["A", "A", "B", "B", "C", "C", "D", "D"];
+    let mut cards = vec!["1" ,"1","2","2","3","3","4","4","5","5","6","6","7","7","8","8","9","9","10","10"];
 
     // 2. 乱数生成器を使ってシャッフル
     // thread_rng(): 現在のスレッドで使用する乱数生成器を取得します。
@@ -71,8 +72,8 @@ fn HomePage() -> impl IntoView {
         // 3. グリッドレイアウトでカードを配置
         <div style="
             display: grid; 
-            grid-template-columns: repeat(4, 100px); 
-            gap: 10px; 
+            grid-template-columns: repeat(5, 100px); 
+            gap: 20px; 
             justify-content: center; 
             margin-top: 20px;
         ">

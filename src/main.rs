@@ -13,10 +13,7 @@ async fn main() { // 「非同期（Asynchronous）処理をプログラムの�
     use axum::Router;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    // コンパイラの提案（concentration_lib）を試します。
-    // もしこれでもエラーが出るなら「concentration」に戻してください。
     use concentration_lib::app::{shell, App};
-    // use concentration::app::{shell, App}; // プロジェクト名が concentration の場合
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
