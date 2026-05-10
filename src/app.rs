@@ -8,6 +8,7 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::StaticSegment;
 use rand::seq::SliceRandom; // シャッフルに必要
 use rand::thread_rng;
+use std::time::Duration;
 
 // 「HTML全体の骨組み（外枠）を定義する特別な関数」
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -26,13 +27,13 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <MetaTags/> // App コンポーネント内で指定した <Title> やメタデータを、この場所に反映させます。
             </head>
             <body>
-                // <body> タグの中で <App/> を呼び出すことで、作成したゲーム本体を画面に流し込みます。
-                <App/>
+                <App/> // <body> タグの中で <App/> を呼び出すことで、作成したゲーム本体を画面に流し込みます。
             </body>
         </html>
     }
 }
 
+// mainから最初に呼び出す関数(webページの構成)
 // #[component]: 関数をLeptosのコンポーネントとして定義するためのマクロです。
 // これにより、HTMLタグのように <App/> として呼び出せるようになります。
 #[component]
@@ -56,67 +57,146 @@ pub fn App() -> impl IntoView {
     }
 }
 
+// メインの処理を行う
 #[component]
 fn HomePage() -> impl IntoView {
     // 1. カードのデータを用意
-    // let mut cards = vec!["A", "A", "B", "B", "C", "C", "D", "D"];
-    let mut cards = vec!["1" ,"1","2","2","3","3","4","4","5","5","6","6","7","7","8","8","9","9","10","10"];
+    /*
+    let mut cards_data = vec![
+        "1", "1", "2", "2", "3", "3", "4", "4", "5", "5",
+        "6", "6", "7", "7", "8", "8", "9", "9", "10", "10"
+    ];
+    */
+
+    let mut cards_data = vec![
+        ["1","♠"], ["1","♦"], ["2","♠"], ["2","♦"], 
+        ["3","♠"], ["3","♦"], ["4","♠"], ["4","♦"],
+        ["5","♠"], ["5","♦"], ["6","♠"], ["6","♦"],
+        ["7","♠"], ["7","♦"], ["8","♠"], ["8","♦"],
+        ["9","♠"], ["9","♦"], ["10","♠"], ["10","♦"]
+    ];
 
     // 2. 乱数生成器を使ってシャッフル
-    // thread_rng(): 現在のスレッドで使用する乱数生成器を取得します。
-    let mut rng = thread_rng();
-    cards.shuffle(&mut rng);
+    let mut rng = thread_rng(); // 現在のスレッドで使用する乱数生成器を取得します。
+    cards_data.shuffle(&mut rng);
 
+    // 3. めくられたカードの「インデックス」を管理するシグナル 「ゲームの現在の進行状況」をリアルタイムに管理するための箱
+    // flipped_indices（読み取り専用）
+    // 現在の状態（どのカードがめくられているか）を取得するための変数です。
+    // 中身は Vec<usize>、つまり「0, 1, 5」といった数値のリストです(カードのインデックス番号のリスト)。
+
+    // set_flipped_indices（書き込み専用）
+    // 状態を更新するための関数（セッター）です。
+    // カードをクリックしたときなどに、この関数を使ってリストに新しい番号を追加したり、リストを空にしたりします。
+
+    // signal(Vec::<usize>::new())
+    // 初期値として「空のリスト（何もめくられていない状態）」をセットして、シグナルを作成しています。
+    let (flipped_indices, set_flipped_indices) = signal(Vec::<usize>::new()); // 変数「flipped」の定義
+    // なぜ「Signal」を使うのか？
+    // 自動更新: set_flipped_indices を使ってリストの中身が変わると、その値を使っている画面上のパーツ（カードの絵柄など）が自動的に再描画されます。
+    // 効率的: 画面全体を書き換えるのではなく、値が変わった「その場所だけ」をピンポイントで更新するため、非常に高速に動作します。
+
+    // 4. クリック時の処理
+    // idx（カードのインデックス番号）を引数に取るクロージャ（関数）を定義しています。
+    // move キーワードは、クロージャの外側にある変数（この場合は set_flipped_indices）の所有権をクロージャ内に取り込むことを意味します。
+    let select_card = move |idx: usize| {
+        // set_flipped_indices は、現在「表を向いているカードの番号」を保持している状態（シグナル）を更新するための関数です。
+        // .update() を使うことで、現在の値（indices）を直接書き換えることができます。
+        set_flipped_indices.update(|indices| {
+
+            // !indices.contains(&idx): すでに選択済みの（表を向いている）同じカードを二度押ししても反応しないようにします。
+            if indices.len() >= 2 || indices.contains(&idx) {
+                return;
+            }
+
+            // 1枚目または2枚目として追加
+            indices.push(idx);
+
+            // 2枚になったら、1秒後にクリアする予約を入れる
+            if indices.len() >= 2 {
+                // 非同期で1秒後に空にする
+                set_timeout(move || {
+                    // indicesを空にする
+                    set_flipped_indices.set(vec![]);
+                }, Duration::from_secs(1));
+            }
+        });
+    };
+
+    // ブラウザで表示する内容
     view! {
-        <h1>"Card Click Demo"</h1>
-        // 3. グリッドレイアウトでカードを配置
+        <h1 style="text-align: center;">"Card Click Demo"</h1>
+        
+        // カードを1行5枚、100px間隔で並べる
         <div style="
             display: grid; 
-            grid-template-columns: repeat(5, 100px); 
+            grid-template-columns: repeat(5, 100px);  
             gap: 20px; 
             justify-content: center; 
             margin-top: 20px;
         ">
-            {cards.into_iter()
-                .map(|content| view! { <Card content=content /> })
-                .collect_view()}
+            // .enumerate().map(|(idx, content)| ...) とすることで、各カードに 0 から 19 までの背番号（idx）を振っています。
+            // .into_iter(): 配列（ベクタ）の要素を一つずつ取り出せるようにします。
+            // .enumerate(): 要素そのもの (content) だけでなく、「何番目のカードか」という番号 (idx) をセットで取得します。データが流れる瞬間に、横から「0番、1番…」と番号を振ります。
+            // .map(|(idx, content)| ... ): 取り出したデータを、view!（HTML要素）へ作り変える処理です。
+            {cards_data.into_iter().enumerate().map(|(idx, content /* このカッコの中が「変数の定義」です */)| {
+                view! {
+                    <Card 
+                        content=content
+                        // 「このカードが開いているかどうか」の判定式をクロージャとして渡しています。
+                        // 「現在開いている番号リスト (flipped_indices) の中に、自分の番号 (idx) が含まれているか？」を常にチェックしています。
+                        // リストが更新されると、この判定が自動で再計算され、カードがパタパタと裏返ります。
+                        is_open=move || flipped_indices.get().contains(&idx)
+                        // クリックされた時に実行する関数です。自分の番号 (idx) を引数として select_card 関数に伝えます。
+                        on_click=move |_| select_card(idx)
+                    />
+                }
+            }).collect_view()} // map でバラバラに生成された複数の Card を、Leptos が画面に描画できる一つの形式にまとめ上げるメソッドです。
         </div>
     }
 }
 
+// 関数シグネチャの基本形、標準的なルールです。
+/*
+fn コンポーネント名(プロパティ(受け取るデータのこと)) -> impl IntoView {
+    view! {
+        // ここにHTML風のコード
+    }
+}
+*/
+// この Card 関数は、親から3つのデータを受け取ります。
+// content: カードの裏面に表示する文字（例: "A" や "りんご" など）。
+// is_open: 「今、このカードは表を向いているべきか？」を判定する関数（クロージャ）。
+// on_click: カードがクリックされたときに実行される処理（親側で定義された選択ロジックなど）。
 #[component]
-fn Card(content: &'static str) -> impl IntoView {
-    // 構造体のフィールドのようなもの。ただし、ただの変数ではなく「この値が変わったら、関係するUIに通知せよ」という特殊な能力を持った「シグナル」です。
-    // set_is_flipped を使って値を書き換えると、Leptosが「あ！値が変わった！この値を使っているHTMLの部分だけ書き換えなきゃ！」と自動で動いてくれます。
-    let (is_flipped, set_is_flipped) = signal(false);
+fn Card(
+    content: [&'static str; 2], // 要素数2のstr配列として受け取る
+    // 関数（クロージャ）をPropsとして渡すときは、以下の3つをセットで書くと覚えておくとエラーに悩まされにくくなります。
+    // impl Fn(...): 実行可能な関数であること。
+    // + Send: スレッド間を移動できること。
+    // + 'static: アプリが動いている間、ずっと有効であること。
+    is_open: impl Fn() -> bool + Send + 'static, // 親の状態を読み取る関数
+    on_click: impl Fn(leptos::ev::MouseEvent) + Send + 'static // 親に通知する関数
 
-    // これはオブジェクトのメソッドに相当します。カードがクリックされた時の動作（状態の反転）を定義しています。
-    let onclick = move |_| {
-        // update メソッドの動きを言葉にすると、以下のようになります。
-        // set_is_flipped が、現在のシグナルの中身（false など）を取り出す。
-        // その値を、関数の引数（flipped）として渡す。
-        // その flipped を使って新しい値を計算し、書き換える。
-        set_is_flipped.update(|flipped| *flipped = !*flipped);// この中の flipped は、「今現在のシグナルの値」を一時的に代入して渡されたものです。
-    };
+    // impl Trait という書き方は、「このトレイト（インターフェース）を実装している何か」を返すという意味です。
+    // IntoView トレイトとは、Leptosにおいて「ブラウザに表示可能なもの」を表すトレイトです。
+    // view! { ... } マクロが生成する値は、最終的にこの IntoView を実装した型になります。
+) -> impl IntoView {
 
     view! {
-        <div class="card-container" on:click=onclick>
-            // 「もし is_flipped が true なら is-flipped というCSSクラスを付与せよ」という動的な紐付けを行っています。
-            // move || という記述は、Rustの「クロージャ（名前のない使い捨て関数）」を作るための構文です。
-            // クロージャは |引数| { 処理 } と書きます。 ||: 引数が「なし」であることを意味します。
-            // move || is_flipped.get(): 「何も受け取らずに、is_flipped.get() の値を返す関数」をその場で作っています。
-            // 関数（クロージャ）にして渡すことで、Leptosが「後で値が変わった時に、この関数をもう一度実行して、新しい値を確認する」ことができるようになります。
-            <div class="card-inner" class:is-flipped=move || is_flipped.get()>
+        <div class="card-container" on:click=on_click>
+            // 親から渡された is_open() の結果でクラスを切り替える
+            <div class="card-inner" class:is-flipped=move || is_open()>
                 <div class="card-face card-front">"?"</div>
                 <div class="card-face card-back">
                     // 左上のマーク
-                    <div class="corner top-left">"♠"</div>
+                    <div class="corner top-left">{content[1]}</div>
                     
                     // 中央のメインコンテンツ
-                    <div class="main-content">{content}</div>
+                    <div class="main-content">{content[0]}</div>
                     
                     // 右下のマーク
-                    <div class="corner bottom-right">"♠"</div>
+                    <div class="corner bottom-right">{content[1]}</div>
                 </div>
             </div>
         </div>

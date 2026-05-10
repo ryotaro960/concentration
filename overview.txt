@@ -1,0 +1,12 @@
+
+1.main.rsのmain()が呼び出される。
+
+2.main()内でapp.rsのApp()が呼び出される。
+
+3.App()内でHomePage()が呼び出される。
+
+4.indices 表になっているカードのリスト。
+  select_card: impl Fn(usize) クリック時の関数。
+  view! ブラウザで表示する内容
+
+5.Cardでカード内容を定義

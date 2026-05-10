@@ -15,21 +15,23 @@ async fn main() { // 「非同期（Asynchronous）処理をプログラムの�
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use concentration_lib::app::{shell, App};
 
-    let conf = get_configuration(None).unwrap();
+    let conf = get_configuration(None).unwrap(); // サーバーの IP アドレスやポート番号（どこで待ち構えるか）を取得します。
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
     // ルートリストを生成
-    let routes = generate_route_list(App);
+    let routes = generate_route_list(App); // どんなページ（URL）があるのかをリストアップします。
 
-    let app = Router::new()
+    let app = Router::new() // Axum（Web サーバーエンジン）を初期化し、Leptos の画面を表示するための設定を紐付けます。
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
-            move || shell(leptos_options.clone())
+            move || shell(leptos_options.clone()) // HTML の土台（<head> や <body> タグなど）を定義している場所を指しています。
         })
         .with_state(leptos_options);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap(); // サーバーを指定のポートで待ち受け状態にする際、準備ができるまで待機します。
+                                                                        // TcpListener::bind(&addr) で指定したアドレス（例: 127.0.0.1:3000）の門を開きます。
     axum::serve(listener, app).await.unwrap(); // Web サーバーを起動し、リクエストが来るのをずっと待ち続けます。
+    // 最後に serve を実行することで、プログラムは終了せずにずっと動き続け、ユーザーがブラウザでアクセスしてくるのを待ち構える状態になります。
 }
 
 #[cfg(not(feature = "ssr"))]
