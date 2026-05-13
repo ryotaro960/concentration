@@ -9,6 +9,7 @@ use leptos_router::StaticSegment;
 use rand::seq::SliceRandom; // シャッフルに必要
 use rand::thread_rng;
 use std::time::Duration;
+use web_sys::HtmlAudioElement; // SE再生に必要
 
 // 「HTML全体の骨組み（外枠）を定義する特別な関数」
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -41,12 +42,28 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 pub fn App() -> impl IntoView {
     provide_meta_context(); // HTMLの <head> 内にある情報（タイトル、メタタグ、スタイルシートなど）を、コンポーネントツリーのどこからでも書き換えられるようにするための準備です。
 
+    // BGMの再生状態を管理するシグナル
+    let (has_started_bgm, set_has_started_bgm) = signal(false);
+
+    // 画面全体のクリックイベントでBGMを開始する
+    let start_bgm = move |_| {
+        if !has_started_bgm.get() {
+            if let Ok(audio) = web_sys::HtmlAudioElement::new_with_src("/music/music.mp3") {
+                audio.set_loop(true);
+                audio.set_volume(0.1);
+                let _ = audio.play();
+                set_has_started_bgm.set(true);
+                // logging::log!("BGM Started!");
+            }
+        }
+    };
+
     view! {
         <Stylesheet id="leptos" href="/pkg/concentration.css"/> // CSSファイルを読み込みます。href="/pkg/concentration.css" は、ビルド時に生成されるスタイルシートを指しています。
         <Title text="神経衰弱ゲーム"/> // ブラウザのタブに表示されるタイトルを設定します。
 
         <Router> // ルーティング機能のコンテキストを提供します。アプリ全体をこれで包むのが一般的です。
-            <main>
+            <main on:click=start_bgm>
                  // 複数のルート定義をまとめます。
                 <Routes fallback=|| "Page not found.".into_view()> // 定義されていないURL（404エラー）にアクセスした際に表示する内容を指定します。ここでは "Page not found." というテキストを表示するように設定されています。
                     <Route path=StaticSegment("") // ルートディレクトリ（トップページ /）を指します。
@@ -61,13 +78,6 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     // 1. カードのデータを用意
-    /*
-    let mut cards_data = vec![
-        "1", "1", "2", "2", "3", "3", "4", "4", "5", "5",
-        "6", "6", "7", "7", "8", "8", "9", "9", "10", "10"
-    ];
-    */
-
     let mut cards_data = vec![
         ["1","♠"], ["1","♦"], ["2","♠"], ["2","♦"], 
         ["3","♠"], ["3","♦"], ["4","♠"], ["4","♦"],
@@ -79,6 +89,9 @@ fn HomePage() -> impl IntoView {
     // 2. 乱数生成器を使ってシャッフル
     let mut rng = thread_rng(); // 現在のスレッドで使用する乱数生成器を取得します。
     cards_data.shuffle(&mut rng);
+
+    // ここでデータを「保存」し、コピー可能な「参照用ハンドル」に変える
+    let stored_cards = store_value(cards_data);
 
     // 3. めくられたカードの「インデックス」を管理するシグナル 「ゲームの現在の進行状況」をリアルタイムに管理するための箱
     // flipped_indices（読み取り専用）
@@ -96,6 +109,9 @@ fn HomePage() -> impl IntoView {
     // 自動更新: set_flipped_indices を使ってリストの中身が変わると、その値を使っている画面上のパーツ（カードの絵柄など）が自動的に再描画されます。
     // 効率的: 画面全体を書き換えるのではなく、値が変わった「その場所だけ」をピンポイントで更新するため、非常に高速に動作します。
 
+    // すでにペアが成立して、ずっと表にしておくカード
+    let (matched_indices, set_matched_indices) = create_signal(Vec::<usize>::new());
+
     // 4. クリック時の処理
     // idx（カードのインデックス番号）を引数に取るクロージャ（関数）を定義しています。
     // move キーワードは、クロージャの外側にある変数（この場合は set_flipped_indices）の所有権をクロージャ内に取り込むことを意味します。
@@ -103,22 +119,39 @@ fn HomePage() -> impl IntoView {
         // set_flipped_indices は、現在「表を向いているカードの番号」を保持している状態（シグナル）を更新するための関数です。
         // .update() を使うことで、現在の値（indices）を直接書き換えることができます。
         set_flipped_indices.update(|indices| {
+            // stored_cards.with(|data| ...) で中身を覗き見る
+            let cards = stored_cards.get_value(); // 読み取り
 
             // !indices.contains(&idx): すでに選択済みの（表を向いている）同じカードを二度押ししても反応しないようにします。
-            if indices.len() >= 2 || indices.contains(&idx) {
+            // matched_indices.get().contains(&idx): マッチ済みのカードをクリックしても反応しないようにします。
+            if indices.len() >= 2 || indices.contains(&idx) || matched_indices.get().contains(&idx){
                 return;
             }
 
+            // カードをめくった時に音を鳴らす
+            play_sound("/sound/flip.mp3");
             // 1枚目または2枚目として追加
             indices.push(idx);
 
-            // 2枚になったら、1秒後にクリアする予約を入れる
+            // 2枚になったら、数字判定
             if indices.len() >= 2 {
-                // 非同期で1秒後に空にする
-                set_timeout(move || {
-                    // indicesを空にする
-                    set_flipped_indices.set(vec![]);
-                }, Duration::from_secs(1));
+                // 1枚目と2枚目の「数字(content[0])」が一致するかチェック
+                if cards[indices[0]][0] == cards[indices[1]][0]{
+                    // 一致した場合：matched_indices に追加して、flipped はすぐ空にする
+                    set_matched_indices.update(|m| {
+                        m.push(indices[0]);
+                        m.push(indices[1]);
+                    });
+                    indices.clear(); 
+                } else {
+                    // 非同期で1秒後に空にする
+                    set_timeout(move || {
+                        // indicesを空にする
+                        set_flipped_indices.set(vec![]);
+                        // カードを伏せる音を鳴らす
+                        play_sound("/sound/set.mp3");
+                    }, Duration::from_secs(1));
+                }
             }
         });
     };
@@ -139,14 +172,14 @@ fn HomePage() -> impl IntoView {
             // .into_iter(): 配列（ベクタ）の要素を一つずつ取り出せるようにします。
             // .enumerate(): 要素そのもの (content) だけでなく、「何番目のカードか」という番号 (idx) をセットで取得します。データが流れる瞬間に、横から「0番、1番…」と番号を振ります。
             // .map(|(idx, content)| ... ): 取り出したデータを、view!（HTML要素）へ作り変える処理です。
-            {cards_data.into_iter().enumerate().map(|(idx, content /* このカッコの中が「変数の定義」です */)| {
+            {stored_cards.get_value().into_iter().enumerate().map(|(idx, content /* このカッコの中が「変数の定義」です */)| {
                 view! {
                     <Card 
                         content=content
                         // 「このカードが開いているかどうか」の判定式をクロージャとして渡しています。
                         // 「現在開いている番号リスト (flipped_indices) の中に、自分の番号 (idx) が含まれているか？」を常にチェックしています。
                         // リストが更新されると、この判定が自動で再計算され、カードがパタパタと裏返ります。
-                        is_open=move || flipped_indices.get().contains(&idx)
+                        is_open=move || {flipped_indices.get().contains(&idx) || matched_indices.get().contains(&idx)}
                         // クリックされた時に実行する関数です。自分の番号 (idx) を引数として select_card 関数に伝えます。
                         on_click=move |_| select_card(idx)
                     />
@@ -200,5 +233,13 @@ fn Card(
                 </div>
             </div>
         </div>
+    }
+}
+
+// SE再生
+fn play_sound(path: &str) {
+    // 新しいオーディオ要素を作成して再生
+    if let Ok(audio) = HtmlAudioElement::new_with_src(path) {
+        let _ = audio.play();
     }
 }

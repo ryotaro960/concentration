@@ -20,6 +20,7 @@ wasm-bindgen = { version = "0.2.106" }
 rand = "0.8.5"
 # WASMで乱数を動かすために getrandom の js フィーチャーが必要
 getrandom = { version = "0.2", features = ["js"] }
+web-sys = { version = "0.3.98", features = ["HtmlAudioElement"] }
 
 [features]
 hydrate = [
@@ -104,3 +105,4 @@ lib-default-features = false
 #
 # Optional. Defaults to "release".
 lib-profile-release = "wasm-release"
+
