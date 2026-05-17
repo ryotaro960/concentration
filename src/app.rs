@@ -34,6 +34,13 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+// 画面の一覧
+#[derive(Clone, Copy, PartialEq)]
+enum GameScreen {
+    Title,
+    Playing,
+}
+
 // mainから最初に呼び出す関数(webページの構成)
 // #[component]: 関数をLeptosのコンポーネントとして定義するためのマクロです。
 // これにより、HTMLタグのように <App/> として呼び出せるようになります。
@@ -42,15 +49,18 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 pub fn App() -> impl IntoView {
     provide_meta_context(); // HTMLの <head> 内にある情報（タイトル、メタタグ、スタイルシートなど）を、コンポーネントツリーのどこからでも書き換えられるようにするための準備です。
 
+    // 現在の画面を管理するシグナル（最初はタイトル画面）
+    let (current_screen, set_current_screen) = signal(GameScreen::Title);
+
     // BGMの再生状態を管理するシグナル
     let (has_started_bgm, set_has_started_bgm) = signal(false);
 
     // 画面全体のクリックイベントでBGMを開始する
-    let start_bgm = move |_| {
+    let start_bgm = move || {
         if !has_started_bgm.get() {
             if let Ok(audio) = web_sys::HtmlAudioElement::new_with_src("/music/music.mp3") {
                 audio.set_loop(true);
-                audio.set_volume(0.1);
+                audio.set_volume(0.05);
                 let _ = audio.play();
                 set_has_started_bgm.set(true);
                 // logging::log!("BGM Started!");
@@ -62,6 +72,59 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/concentration.css"/> // CSSファイルを読み込みます。href="/pkg/concentration.css" は、ビルド時に生成されるスタイルシートを指しています。
         <Title text="神経衰弱ゲーム"/> // ブラウザのタブに表示されるタイトルを設定します。
 
+        // 画面全体を囲むコンテナ。ここでBGMのトリガーを引く
+        <main on:click=move |_| start_bgm() style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            font-family: sans-serif;
+        ">
+            {move || match current_screen.get() {
+                // タイトル画面の表示
+                GameScreen::Title => view! {
+                    <div style="
+                        text-align: center;
+                        background: white;
+                        padding: 40px;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    ">
+                        <h1 style="font-size: 2.5rem; margin-bottom: 30px; color: #333;">
+                            "神経衰弱ゲーム"
+                        </h1>
+                        
+                        // ここがボタン。将来的に難易度ごとに分ける足掛かりになります
+                        <button 
+                            on:click=move /*[set_current_screen]*/ |_| {
+                                set_current_screen.set(GameScreen::Playing);
+                            }
+                            style="
+                                padding: 12px 36px;
+                                font-size: 1.2rem; 
+                                background-color: #007bff; 
+                                color: white; 
+                                border: none; 
+                                border-radius: 6px; 
+                                cursor: pointer; 
+                                transition: background 0.2s; 
+                            "
+                        >
+                            "ゲームを始める"
+                        </button>
+                    </div>
+                }.into_any(),
+
+                // ゲーム画面（既存のHomePage）の表示
+                GameScreen::Playing => view! {
+                    <HomePage/>
+                }.into_any(),
+            }}
+        </main>
+
+        /*
         <Router> // ルーティング機能のコンテキストを提供します。アプリ全体をこれで包むのが一般的です。
             <main on:click=start_bgm>
                  // 複数のルート定義をまとめます。
@@ -71,6 +134,7 @@ pub fn App() -> impl IntoView {
                 </Routes>
             </main>
         </Router>
+        */
     }
 }
 
@@ -93,7 +157,22 @@ fn HomePage() -> impl IntoView {
     // ここでデータを「保存」し、コピー可能な「参照用ハンドル」に変える
     let stored_cards = store_value(cards_data);
 
-    // 3. めくられたカードの「インデックス」を管理するシグナル 「ゲームの現在の進行状況」をリアルタイムに管理するための箱
+    // カードの並べ方の変数を定義（難易度に応じて後で変更できるようにする値）
+    let cols = 5;
+    let card_width = "100px";
+
+    // 3.format! を使ってカードの並べ方のスタイル文字列を動的に生成
+    let grid_style = format!(
+            "display: grid; \
+            grid-template-columns: repeat({}, {});  \
+            gap: 20px; \
+            justify-content: center; \
+            margin-top: 20px;",
+            cols, card_width
+    );
+
+
+    // 4. めくられたカードの「インデックス」を管理するシグナル 「ゲームの現在の進行状況」をリアルタイムに管理するための箱
     // flipped_indices（読み取り専用）
     // 現在の状態（どのカードがめくられているか）を取得するための変数です。
     // 中身は Vec<usize>、つまり「0, 1, 5」といった数値のリストです(カードのインデックス番号のリスト)。
@@ -112,7 +191,7 @@ fn HomePage() -> impl IntoView {
     // すでにペアが成立して、ずっと表にしておくカード
     let (matched_indices, set_matched_indices) = create_signal(Vec::<usize>::new());
 
-    // 4. クリック時の処理
+    // 5. クリック時の処理
     // idx（カードのインデックス番号）を引数に取るクロージャ（関数）を定義しています。
     // move キーワードは、クロージャの外側にある変数（この場合は set_flipped_indices）の所有権をクロージャ内に取り込むことを意味します。
     let select_card = move |idx: usize| {
@@ -160,14 +239,10 @@ fn HomePage() -> impl IntoView {
     view! {
         <h1 style="text-align: center;">"Card Click Demo"</h1>
         
-        // カードを1行5枚、100px間隔で並べる
-        <div style="
-            display: grid; 
-            grid-template-columns: repeat(5, 100px);  
-            gap: 20px; 
-            justify-content: center; 
-            margin-top: 20px;
-        ">
+        // 3. 生成した文字列変数を style 属性に渡す
+        <div style=grid_style>
+        // ここにカードの要素が入る
+
             // .enumerate().map(|(idx, content)| ...) とすることで、各カードに 0 から 19 までの背番号（idx）を振っています。
             // .into_iter(): 配列（ベクタ）の要素を一つずつ取り出せるようにします。
             // .enumerate(): 要素そのもの (content) だけでなく、「何番目のカードか」という番号 (idx) をセットで取得します。データが流れる瞬間に、横から「0番、1番…」と番号を振ります。
