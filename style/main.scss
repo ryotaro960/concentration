@@ -3,6 +3,42 @@ body {
 	text-align: center;
 }
 
+.title_background{
+	position: relative;
+	text-align: center;
+	background: white;
+	padding: 40px;
+	border-radius: 12px;
+	box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.title_image{
+	position:relative;
+}
+
+.button_box{
+	position:absolute;
+	top: 600px;
+  right: 0px;
+  left: 0px;
+  margin: 0 auto;
+	width: 700px;
+	height: 60px;
+	display: flex;
+	justify-content: space-around;
+}
+
+.level_button{
+	padding: 12px 36px;
+	font-size: 1.2rem; 
+	background-color: #007bff; 
+	color: white; 
+	border: none; 
+	border-radius: 6px; 
+	cursor: pointer; 
+	transition: background 0.2s; 
+}
+
 /* カード全体のコンテナ（3D空間の定義） */
 .card-container {
     perspective: 1000px; // 奥行（ユーザーと画面の距離感）

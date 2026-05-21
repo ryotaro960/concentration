@@ -4,6 +4,42 @@ body {
   text-align: center;
 }
 
+.title_background {
+  position: relative;
+  text-align: center;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.title_image {
+  position: relative;
+}
+
+.button_box {
+  position: absolute;
+  top: 600px;
+  right: 0px;
+  left: 0px;
+  margin: 0 auto;
+  width: 700px;
+  height: 60px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.level_button {
+  padding: 12px 36px;
+  font-size: 1.2rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
 /* カード全体のコンテナ（3D空間の定義） */
 .card-container {
   perspective: 1000px;
@@ -77,4 +113,4 @@ body {
   font-weight: bold;
 }
 
-/*# sourceMappingURL=data:application/json;charset=utf-8,%7B%22version%22:3,%22sourceRoot%22:%22%22,%22sources%22:%5B%22../../style/main.scss%22%5D,%22names%22:%5B%5D,%22mappings%22:%22;AAAA;EACC;EACA;;;AAGD;AACA;EACI;EACA;EACA;EACA;AAEF;;AACA;EACE;EACA;EACA;EACA;EACA;EACA;AAEA;AAKA;;AAJA;EACE;;AAIF;EACE;EACA;EACA;EAEA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;AAGA;AAQA;AAMA;AAQA;AAMA;AAOA;;AAlCA;EACE;EACA;EACA;EACA;;AAIF;EACE;EACA;;AAIF;EACE;EACA;EACA;EACA;;AAIF;EACE;EACA;;AAIF;EACE;EACA;EACA;;AAIF;EACE;EACA%22,%22file%22:%22main.css%22%7D */
+/*# sourceMappingURL=data:application/json;charset=utf-8,%7B%22version%22:3,%22sourceRoot%22:%22%22,%22sources%22:%5B%22../../style/main.scss%22%5D,%22names%22:%5B%5D,%22mappings%22:%22;AAAA;EACC;EACA;;;AAGD;EACC;EACA;EACA;EACA;EACA;EACA;;;AAGD;EACC;;;AAGD;EACC;EACA;EACC;EACA;EACA;EACD;EACA;EACA;EACA;;;AAGD;EACC;EACA;EACA;EACA;EACA;EACA;EACA;EACA;;;AAGD;AACA;EACI;EACA;EACA;EACA;AAEF;;AACA;EACE;EACA;EACA;EACA;EACA;EACA;AAEA;AAKA;;AAJA;EACE;;AAIF;EACE;EACA;EACA;EAEA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;EACA;AAGA;AAQA;AAMA;AAQA;AAMA;AAOA;;AAlCA;EACE;EACA;EACA;EACA;;AAIF;EACE;EACA;;AAIF;EACE;EACA;EACA;EACA;;AAIF;EACE;EACA;;AAIF;EACE;EACA;EACA;;AAIF;EACE;EACA%22,%22file%22:%22main.css%22%7D */

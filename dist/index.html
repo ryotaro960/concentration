@@ -7,8 +7,8 @@
     <!-- data-bin="concentration" を追加して、実行ファイルを指定します -->
     
 <script type="module">
-import init, * as bindings from '/concentration-d357d56a3f48616c.js';
-const wasm = await init({ module_or_path: '/concentration-d357d56a3f48616c_bg.wasm' });
+import init, * as bindings from '/concentration-f3543bab6cb4d53c.js';
+const wasm = await init({ module_or_path: '/concentration-f3543bab6cb4d53c_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -18,11 +18,12 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
 
 </script>
     <!-- TrunkにSCSSを処理させるための指定 -->
-    <link rel="stylesheet" href="/main-d98932425ed4b6da.css" integrity="sha384-qFT6X88k6ZEyhLv5SQaNxWg++bjVBoPRqiiK6Ovb+61+PJpNPYQAF5EaS4mIi1Rh"/>
+    <link rel="stylesheet" href="/main-683c5af3468762b5.css" integrity="sha384-wL6/1Odb025jLmVZOdEBqy6jQt0TpEgYwyhjiReqfWDRcg9fWXAFToiCJyhq6lOk"/>
     
     
     
-  <link rel="modulepreload" href="/concentration-d357d56a3f48616c.js" crossorigin="anonymous" integrity="sha384-CH/kZLqcO+9mMpjBiIUJ8RuUmmWPPPmRLMxsQFNfFZbkv1J3Iu3i4o9L3S3+A69M"><link rel="preload" href="/concentration-d357d56a3f48616c_bg.wasm" crossorigin="anonymous" integrity="sha384-WDJhst7NHRCHGFOWPhTg/+v9actjgHyD4+P3SBNui4aKYdIhzFIkTRIo4yMd5Ru2" as="fetch" type="application/wasm"></head>
+    
+  <link rel="modulepreload" href="/concentration-f3543bab6cb4d53c.js" crossorigin="anonymous" integrity="sha384-NbCfKZhP7uranoiiiDiRhS1+QNzB3Bzls6dmksbGyweD7coCg2lPF4Mt3FVPEFxO"><link rel="preload" href="/concentration-f3543bab6cb4d53c_bg.wasm" crossorigin="anonymous" integrity="sha384-n0g1u6jIUr4Fp9w8bbc03uXX1gTb2HWIhdTr8nJH3DScWo3od9RWu0Q4uNtnB8M8" as="fetch" type="application/wasm"></head>
   <body><script>"use strict";
 
 (function () {

@@ -34,12 +34,21 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum Difficulty {
+    Easy = 0,
+    Normal = 1,
+    Hard = 2,
+}
+
 // 画面の一覧
 #[derive(Clone, Copy, PartialEq)]
 enum GameScreen {
     Title,
-    Playing,
+    Playing(Difficulty),
 }
+
+
 
 // mainから最初に呼び出す関数(webページの構成)
 // #[component]: 関数をLeptosのコンポーネントとして定義するためのマクロです。
@@ -51,78 +60,50 @@ pub fn App() -> impl IntoView {
 
     // 現在の画面を管理するシグナル（最初はタイトル画面）
     let (current_screen, set_current_screen) = signal(GameScreen::Title);
-
-    // BGMの再生状態を管理するシグナル
-    let (has_started_bgm, set_has_started_bgm) = signal(false);
-
-    // 画面全体のクリックイベントでBGMを開始する
-    let start_bgm = move || {
-        if !has_started_bgm.get() {
-            if let Ok(audio) = web_sys::HtmlAudioElement::new_with_src("/music/music.mp3") {
-                audio.set_loop(true);
-                audio.set_volume(0.05);
-                let _ = audio.play();
-                set_has_started_bgm.set(true);
-                // logging::log!("BGM Started!");
-            }
-        }
-    };
-
+    
     view! {
         <Stylesheet id="leptos" href="/pkg/concentration.css"/> // CSSファイルを読み込みます。href="/pkg/concentration.css" は、ビルド時に生成されるスタイルシートを指しています。
         <Title text="神経衰弱ゲーム"/> // ブラウザのタブに表示されるタイトルを設定します。
 
-        // 画面全体を囲むコンテナ。ここでBGMのトリガーを引く
-        <main on:click=move |_| start_bgm() style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f0f2f5;
-            font-family: sans-serif;
-        ">
-            {move || match current_screen.get() {
-                // タイトル画面の表示
-                GameScreen::Title => view! {
-                    <div style="
-                        text-align: center;
-                        background: white;
-                        padding: 40px;
-                        border-radius: 12px;
-                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    ">
-                        <h1 style="font-size: 2.5rem; margin-bottom: 30px; color: #333;">
-                            "神経衰弱ゲーム"
-                        </h1>
-                        
-                        // ここがボタン。将来的に難易度ごとに分ける足掛かりになります
+        {move || match current_screen.get() {
+            // タイトル画面の表示
+            GameScreen::Title => view! {
+                <div class="title_background">
+                    <img src="/image/title.png" alt="title" title="title" width="1000" height="700" class="title_image" />
+                    
+                    // ここがボタン。将来的に難易度ごとに分ける足掛かりになります
+                    <div class="button_box">
                         <button 
-                            on:click=move /*[set_current_screen]*/ |_| {
-                                set_current_screen.set(GameScreen::Playing);
+                            on:click=move |_| {
+                                set_current_screen.set(GameScreen::Playing(Difficulty::Easy));
                             }
-                            style="
-                                padding: 12px 36px;
-                                font-size: 1.2rem; 
-                                background-color: #007bff; 
-                                color: white; 
-                                border: none; 
-                                border-radius: 6px; 
-                                cursor: pointer; 
-                                transition: background 0.2s; 
-                            "
+                            class = "level_button"
                         >
-                            "ゲームを始める"
+                            "初級"
+                        </button>
+                        <button 
+                            on:click=move |_| {
+                                set_current_screen.set(GameScreen::Playing(Difficulty::Normal));
+                            }
+                            class = "level_button"
+                        >
+                            "中級"
+                        </button>
+                        <button 
+                            on:click=move |_| set_current_screen.set(GameScreen::Playing(Difficulty::Hard))
+                            class = "level_button"
+                        >
+                            "上級"
                         </button>
                     </div>
-                }.into_any(),
+                </div>
+            }.into_any(),
 
-                // ゲーム画面（既存のHomePage）の表示
-                GameScreen::Playing => view! {
-                    <HomePage/>
-                }.into_any(),
-            }}
-        </main>
+            // ゲーム画面（既存のHomePage）の表示
+            GameScreen::Playing(diff) => view! {
+                <HomePage difficulty=diff/>
+            }.into_any(),
+        }}
 
         /*
         <Router> // ルーティング機能のコンテキストを提供します。アプリ全体をこれで包むのが一般的です。
@@ -140,7 +121,17 @@ pub fn App() -> impl IntoView {
 
 // メインの処理を行う
 #[component]
-fn HomePage() -> impl IntoView {
+fn HomePage(difficulty: Difficulty) -> impl IntoView {
+    // 💡 ここで Difficulty を 0, 1, 2 の数値に変換して変数に代入します！
+    let diff_level = difficulty as usize;
+
+    match diff_level {
+        0 => play_bgm("/music/low_bgm.mp3"),
+        1 => play_bgm("/music/mid_bgm.mp3"),
+        2 => play_bgm("/music/high_bgm.mp3"),
+        _ => play_bgm("/music/low_bgm.mp3"),
+    }
+    
     // 1. カードのデータを用意
     let mut cards_data = vec![
         ["1","♠"], ["1","♦"], ["2","♠"], ["2","♦"], 
@@ -158,7 +149,7 @@ fn HomePage() -> impl IntoView {
     let stored_cards = store_value(cards_data);
 
     // カードの並べ方の変数を定義（難易度に応じて後で変更できるようにする値）
-    let cols = 5;
+    let cols = diff_level + 4;
     let card_width = "100px";
 
     // 3.format! を使ってカードの並べ方のスタイル文字列を動的に生成
@@ -309,6 +300,23 @@ fn Card(
             </div>
         </div>
     }
+}
+
+// BGM再生
+fn play_bgm(path: &str) {
+    // BGMの再生状態を管理するシグナル
+    // let (has_started_bgm, set_has_started_bgm) = signal(false);
+
+    // BGMを開始する
+    // if !has_started_bgm.get() {
+        if let Ok(audio) = web_sys::HtmlAudioElement::new_with_src(path) {
+            audio.set_loop(true);
+            audio.set_volume(0.05);
+            let _ = audio.play();
+        //    set_has_started_bgm.set(true);
+            // logging::log!("BGM Started!");
+        }
+    // }
 }
 
 // SE再生
